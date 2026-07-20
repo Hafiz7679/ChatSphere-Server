@@ -7,18 +7,42 @@ const messageSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-
-    receiver: {
+    chat: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "Chat",
       required: true,
     },
-
-    text: {
+    content: {
       type: String,
-      required: true,
       trim: true,
     },
+    attachments: [
+      {
+        url: String,
+        type: { type: String },
+        name: String,
+        size: Number,
+      },
+    ],
+    replyTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Message",
+    },
+    status: {
+      type: String,
+      enum: ["sent", "delivered", "read"],
+      default: "sent",
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    reactions: [
+      {
+        user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        emoji: String,
+      },
+    ],
   },
   {
     timestamps: true,

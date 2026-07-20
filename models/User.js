@@ -31,6 +31,21 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+
+    settings: {
+      darkMode: {
+        type: Boolean,
+        default: false,
+      },
+      notifications: {
+        type: Boolean,
+        default: true,
+      },
+      sound: {
+        type: Boolean,
+        default: true,
+      },
+    },
   },
   {
     timestamps: true,
