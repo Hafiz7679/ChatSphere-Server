@@ -114,7 +114,7 @@ const getMessages = async (req, res, next) => {
       const obj = msg.toObject();
       obj.text = obj.content;
       obj.receiver =
-        obj.chat.users.find((u) => u.toString() !== obj.sender._id.toString()) ||
+        chat.users.find((u) => u.toString() !== obj.sender._id.toString()) ||
         receiver;
       return obj;
     });
