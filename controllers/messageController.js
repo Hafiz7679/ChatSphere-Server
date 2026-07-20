@@ -15,8 +15,8 @@ const sendMessage = async (req, res, next) => {
       return res.status(401).json({ success: false, message: "Not Authorized" });
     }
 
-    if (!text && !replyTo) {
-      return res.status(400).json({ success: false, message: "Missing required fields" });
+    if (!text && !replyTo && !req.body.attachments) {
+      return res.status(400).json({ success: false, message: "Missing message content" });
     }
 
     let activeChatId = chatId;
@@ -52,6 +52,7 @@ const sendMessage = async (req, res, next) => {
 
     if (text) messageData.content = text;
     if (replyTo) messageData.replyTo = replyTo;
+    if (req.body.attachments) messageData.attachments = req.body.attachments;
 
     const message = await Message.create(messageData);
 

@@ -3,7 +3,7 @@ const Message = require("../models/Message");
 
 const onlineUsers = new Map();
 const typingTimers = new Map();
-const TYPING_AUTO_CLEAR_MS = 5000;
+const TYPING_AUTO_CLEAR_MS = 3000;
 
 function addOnlineSocket(userId, socketId) {
   if (!onlineUsers.has(userId)) {
@@ -81,12 +81,13 @@ function initSocketServer(server, allowedOrigins) {
     // ---- Messages ----
     socket.on("send_message", (message) => {
       const receiverId = message.receiver;
+      // Send to the receiver
       if (receiverId) {
         getSocketIds(receiverId).forEach((sid) => {
           io.to(sid).emit("receive_message", message);
-          io.to(sid).emit("new_message", message);
         });
       }
+      // Send to other tabs of the sender
       if (socket.userId) {
         clearTypingTimer(socket.userId);
         getSocketIds(message.sender).forEach((sid) => {
@@ -141,7 +142,26 @@ function initSocketServer(server, allowedOrigins) {
       }).catch(() => {});
     });
 
-    socket.on("mark_as_read", ({ chatId, senderId }) => {
+    socket.on("message_delivered", async ({ messageId, senderId }) => {
+      try {
+        await Message.findByIdAndUpdate(messageId, { status: "delivered" });
+      } catch (err) {
+        console.error("message_delivered error:", err.message);
+      }
+      getSocketIds(senderId).forEach((sid) => {
+        io.to(sid).emit("message_status_updated", { messageId, status: "delivered" });
+      });
+    });
+
+    socket.on("mark_as_read", async ({ chatId, senderId }) => {
+      try {
+        await Message.updateMany(
+          { chat: chatId, sender: { $ne: socket.userId }, status: { $ne: "read" } },
+          { status: "read" }
+        );
+      } catch (err) {
+        console.error("mark_as_read error:", err.message);
+      }
       getSocketIds(senderId).forEach((sid) => {
         io.to(sid).emit("messages_read", { chatId, readBy: socket.userId });
       });

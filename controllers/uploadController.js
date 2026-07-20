@@ -1,11 +1,19 @@
 const cloudinary = require("cloudinary").v2;
 const streamifier = require("streamifier");
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+const isCloudinaryConfigured = () => {
+  return !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET);
+};
+
+if (isCloudinaryConfigured()) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+  });
+} else {
+  console.error("⚠️  Cloudinary not configured. File uploads will fail. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET in .env");
+}
 
 const uploadToCloudinary = (buffer, folder, resourceType = "auto") => {
   return new Promise((resolve, reject) => {
@@ -25,6 +33,9 @@ const uploadFile = async (req, res, next) => {
     if (!req.file) {
       return res.status(400).json({ success: false, message: "No file uploaded" });
     }
+    if (!isCloudinaryConfigured()) {
+      return res.status(500).json({ success: false, message: "Cloudinary not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET in .env" });
+    }
 
     const result = await uploadToCloudinary(
       req.file.buffer,
@@ -43,6 +54,7 @@ const uploadFile = async (req, res, next) => {
       },
     });
   } catch (error) {
+    console.error("Upload error:", error.message);
     next(error);
   }
 };
@@ -51,6 +63,9 @@ const uploadAvatar = async (req, res, next) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, message: "No file uploaded" });
+    }
+    if (!isCloudinaryConfigured()) {
+      return res.status(500).json({ success: false, message: "Cloudinary not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET in .env" });
     }
 
     const result = await uploadToCloudinary(
@@ -67,6 +82,7 @@ const uploadAvatar = async (req, res, next) => {
       },
     });
   } catch (error) {
+    console.error("Avatar upload error:", error.message);
     next(error);
   }
 };
@@ -75,6 +91,9 @@ const uploadVoice = async (req, res, next) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, message: "No file uploaded" });
+    }
+    if (!isCloudinaryConfigured()) {
+      return res.status(500).json({ success: false, message: "Cloudinary not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET in .env" });
     }
 
     const result = await uploadToCloudinary(
@@ -92,6 +111,7 @@ const uploadVoice = async (req, res, next) => {
       },
     });
   } catch (error) {
+    console.error("Voice upload error:", error.message);
     next(error);
   }
 };
