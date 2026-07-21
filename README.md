@@ -355,8 +355,7 @@ https://github.com/Hafiz7679
 
 **LinkedIn**
 
-(Add Your LinkedIn URL)
-
+https://www.linkedin.com/in/abdulhafizsk00/
 ---
 
 <div align="center">
