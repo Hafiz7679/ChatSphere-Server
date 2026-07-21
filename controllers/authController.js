@@ -62,6 +62,7 @@ const register = async (req, res, next) => {
       success: true,
       message: "User Registered Successfully",
       user,
+      token,
     });
   } catch (error) {
     next(error);
@@ -114,6 +115,7 @@ const login = async (req, res, next) => {
       success: true,
       message: "Login Successful",
       user,
+      token,
     });
   } catch (error) {
     next(error);
