@@ -1,5 +1,6 @@
 const errorHandler = (err, req, res, _next) => {
-  console.error(`[ERROR] ${err.message}`);
+  console.error(`[ERROR] ${req.method} ${req.originalUrl} — ${err.message}`);
+  if (process.env.NODE_ENV !== "production") console.error(err.stack?.split("\n").slice(0, 4).join("\n"));
 
   if (err.name === "ValidationError") {
     const messages = Object.values(err.errors).map((e) => e.message);

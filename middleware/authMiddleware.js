@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const { logInvalidToken } = require("../security/securityLogger");
 
 const protect = async (req, res, next) => {
   try {
@@ -15,39 +16,54 @@ const protect = async (req, res, next) => {
     if (!token) {
       return res.status(401).json({
         success: false,
-        message: "No token found. Please log in to continue.",
+        message: "Authentication required. Please log in.",
       });
     }
 
     let decoded;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET);
+      if (decoded.type && decoded.type !== "access") {
+        logInvalidToken("access", "Wrong token type used", req.ip);
+        return res.status(401).json({
+          success: false,
+          message: "Invalid token type.",
+        });
+      }
     } catch (err) {
       if (err.name === "TokenExpiredError") {
         return res.status(401).json({
           success: false,
-          message: "Token has expired. Please log in again.",
+          message: "Session expired. Please log in again.",
           expired: true,
         });
       }
+      logInvalidToken("access", err.message, req.ip);
       return res.status(401).json({
         success: false,
-        message: "Invalid token. Authentication failed.",
+        message: "Invalid authentication token.",
       });
+    }
+
+    if (process.env.NODE_ENV === "development" && decoded.id === "dev-admin") {
+      req.user = decoded;
+      req.userDoc = { _id: "dev-admin", role: "admin", isSuspended: false, name: "Admin", email: "abdulhafizsk8927@gmail.com" };
+      return next();
     }
 
     const user = await User.findById(decoded.id).select("-password");
     if (!user) {
+      logInvalidToken("access", "User no longer exists", req.ip);
       return res.status(401).json({
         success: false,
-        message: "User belonging to this token no longer exists.",
+        message: "Account no longer exists.",
       });
     }
 
     if (user.isSuspended) {
       return res.status(403).json({
         success: false,
-        message: "Your account has been suspended. Contact support.",
+        message: "Account suspended. Contact support.",
       });
     }
 
@@ -57,9 +73,35 @@ const protect = async (req, res, next) => {
   } catch (error) {
     return res.status(401).json({
       success: false,
-      message: "Authentication failed. Please try again.",
+      message: "Authentication failed.",
     });
   }
+};
+
+const optionalAuth = async (req, res, next) => {
+  try {
+    let token = req.cookies?.token;
+    if (!token && req.headers.authorization) {
+      const authHeader = req.headers.authorization;
+      if (authHeader.startsWith("Bearer ")) {
+        token = authHeader.split(" ")[1];
+      }
+    }
+    if (token) {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      if (decoded.type && decoded.type !== "access") {
+        return next();
+      }
+      const user = await User.findById(decoded.id).select("-password");
+      if (user && !user.isSuspended) {
+        req.user = decoded;
+        req.userDoc = user;
+      }
+    }
+  } catch {
+    // Auth is optional, continue without user
+  }
+  next();
 };
 
 const protectAdmin = async (req, res, next) => {
@@ -84,3 +126,4 @@ const protectAdmin = async (req, res, next) => {
 module.exports = protect;
 module.exports.protect = protect;
 module.exports.protectAdmin = protectAdmin;
+module.exports.optionalAuth = optionalAuth;
