@@ -301,6 +301,42 @@ const getChatMedia = async (req, res, next) => {
   }
 };
 
+const reactToMessage = async (req, res, next) => {
+  try {
+    const { messageId } = req.params;
+    const { emoji } = req.body;
+    const userId = req.user.id;
+
+    if (!emoji) {
+      return res.status(400).json({ success: false, message: "Emoji is required" });
+    }
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ success: false, message: "Message not found" });
+    }
+
+    const existingIndex = (message.reactions || []).findIndex(
+      (r) => r.user.toString() === userId && r.emoji === emoji
+    );
+
+    if (existingIndex > -1) {
+      message.reactions.splice(existingIndex, 1);
+    } else {
+      message.reactions.push({ user: userId, emoji });
+    }
+
+    await message.save();
+
+    res.status(200).json({
+      success: true,
+      reactions: message.reactions,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   sendMessage,
   getMessages,
@@ -309,4 +345,5 @@ module.exports = {
   editMessage,
   markAsRead,
   getChatMedia,
+  reactToMessage,
 };

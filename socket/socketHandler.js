@@ -149,12 +149,32 @@ function initSocketServer(server, allowedOrigins) {
     });
 
     socket.on("message_reacted", ({ messageId, chatId, emoji, remove, senderId }) => {
+      const Message = require("../models/Message");
+      const userId = socket.userId;
+      Message.findById(messageId).then((msg) => {
+        if (!msg) return;
+        if (remove) {
+          msg.reactions = (msg.reactions || []).filter(
+            (r) => !(r.emoji === emoji && r.user.toString() === userId)
+          );
+        } else {
+          const existing = (msg.reactions || []).findIndex(
+            (r) => r.emoji === emoji && r.user.toString() === userId
+          );
+          if (existing > -1) {
+            msg.reactions.splice(existing, 1);
+          } else {
+            msg.reactions.push({ user: userId, emoji });
+          }
+        }
+        msg.save().catch(() => {});
+      }).catch(() => {});
       require("../models/Chat").findById(chatId).then((doc) => {
         if (doc) {
           doc.users.forEach((uid) => {
-            if (uid.toString() !== socket.userId)
+            if (uid.toString() !== userId)
               getSocketIds(uid.toString()).forEach((sid) => {
-                io.to(sid).emit("message_reacted", { messageId, emoji, userId: socket.userId, remove });
+                io.to(sid).emit("message_reacted", { messageId, emoji, userId, remove });
               });
           });
         }
