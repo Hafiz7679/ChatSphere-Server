@@ -248,6 +248,59 @@ const markAsRead = async (req, res, next) => {
   }
 };
 
+const getChatMedia = async (req, res, next) => {
+  try {
+    const { chatId } = req.params;
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 30;
+    const skip = (page - 1) * limit;
+
+    if (!isValidObjectId(chatId)) {
+      return res.status(400).json({ success: false, message: "Invalid chat id" });
+    }
+
+    const total = await Message.countDocuments({
+      chat: chatId,
+      isDeleted: false,
+      "attachments.0": { $exists: true },
+    });
+
+    const messages = await Message.find({
+      chat: chatId,
+      isDeleted: false,
+      "attachments.0": { $exists: true },
+    })
+      .populate("sender", "name avatar")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const mediaItems = messages.flatMap((msg) => {
+      const sender = msg.sender;
+      return msg.attachments.map((att) => ({
+        _id: att._id?.toString() || `${msg._id}-${att.url}`,
+        url: att.url,
+        type: att.type || "application/octet-stream",
+        name: att.name || "file",
+        size: att.size || 0,
+        messageId: msg._id,
+        sender: sender ? { _id: sender._id, name: sender.name, avatar: sender.avatar } : null,
+        createdAt: msg.createdAt,
+      }));
+    });
+
+    res.status(200).json({
+      success: true,
+      data: mediaItems,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   sendMessage,
   getMessages,
@@ -255,4 +308,5 @@ module.exports = {
   deleteMessage,
   editMessage,
   markAsRead,
+  getChatMedia,
 };

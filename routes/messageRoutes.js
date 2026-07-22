@@ -7,6 +7,7 @@ const {
   deleteMessage,
   editMessage,
   markAsRead,
+  getChatMedia,
 } = require("../controllers/messageController");
 const protect = require("../middleware/authMiddleware");
 
@@ -16,5 +17,6 @@ router.get("/chat/:chatId", protect, getChatMessages);
 router.delete("/:messageId", protect, deleteMessage);
 router.put("/:messageId", protect, editMessage);
 router.put("/read/mark", protect, markAsRead);
+router.get("/media/:chatId", protect, getChatMedia);
 
 module.exports = router;
