@@ -129,14 +129,13 @@ function initSocketServer(server, allowedOrigins) {
     });
 
     socket.on("message_reacted", ({ messageId, chatId, emoji, remove, senderId }) => {
-      const broadcast = (sid) =>
-        io.to(sid).emit("message_reacted", { messageId, emoji, userId: socket.userId, remove });
-      if (senderId) getSocketIds(senderId).forEach(broadcast);
       require("../models/Chat").findById(chatId).then((doc) => {
         if (doc) {
           doc.users.forEach((uid) => {
             if (uid.toString() !== socket.userId)
-              getSocketIds(uid.toString()).forEach(broadcast);
+              getSocketIds(uid.toString()).forEach((sid) => {
+                io.to(sid).emit("message_reacted", { messageId, emoji, userId: socket.userId, remove });
+              });
           });
         }
       }).catch(() => {});

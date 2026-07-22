@@ -244,6 +244,26 @@ const getUsers = async (req, res, next) => {
   }
 };
 
+// Logout User
+const logout = async (req, res, next) => {
+  try {
+    const isProduction = process.env.NODE_ENV === "production";
+    res.cookie("token", "", {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+      expires: new Date(0),
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Logged out successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -251,4 +271,5 @@ module.exports = {
   updateProfile,
   updatePassword,
   getUsers,
+  logout,
 };
