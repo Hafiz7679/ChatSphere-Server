@@ -73,8 +73,6 @@ const register = async (req, res, next) => {
       verificationTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
     });
 
-    user.password = undefined;
-
     sendVerificationEmail(user.email, verificationToken).catch((err) => {
       console.error("Failed to send verification email:", err.message);
     });
@@ -83,6 +81,8 @@ const register = async (req, res, next) => {
     const refreshToken = generateRefreshToken(user._id);
     user.refreshToken = refreshToken;
     await user.save();
+
+    user.password = undefined;
 
     const isProduction = process.env.NODE_ENV === "production";
     res.cookie("token", token, {
