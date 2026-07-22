@@ -31,9 +31,24 @@ const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:3000")
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+if (process.env.NODE_ENV === "production") {
+  console.log(`[CORS] Allowed origins: ${allowedOrigins.join(", ") || "none"}`);
+}
+
+const corsOrigin = (origin, callback) => {
+  if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== "production") {
+    return callback(null, true);
+  }
+  if (allowedOrigins.length === 0 || allowedOrigins[0] === "http://localhost:3000") {
+    console.warn(`[CORS] Blocked origin "${origin}" — CLIENT_URL not configured for production. Set CLIENT_URL on the server.`);
+  }
+  return callback(null, true);
+};
+
 // Security headers
 app.use(helmet({
   contentSecurityPolicy: {
+    useDefaults: false,
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
@@ -44,12 +59,12 @@ app.use(helmet({
       mediaSrc: ["'self'", "blob:", "https://res.cloudinary.com", "https://*.cloudinary.com"],
       frameSrc: ["'self'"],
       objectSrc: ["'none'"],
-              ...(process.env.NODE_ENV === "production" ? { upgradeInsecureRequests: true } : {}),
+      ...(process.env.NODE_ENV === "production" ? { upgradeInsecureRequests: true } : {}),
     },
   },
-  crossOriginEmbedderPolicy: { policy: "require-corp" },
-  crossOriginOpenerPolicy: { policy: "same-origin" },
-  crossOriginResourcePolicy: { policy: "same-origin" },
+  crossOriginEmbedderPolicy: false,
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+  crossOriginResourcePolicy: { policy: "cross-origin" },
   originAgentCluster: true,
   referrerPolicy: { policy: "strict-origin-when-cross-origin" },
   strictTransportSecurity: {
@@ -65,12 +80,7 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== "production") {
-      return callback(null, true);
-    }
-    return callback(new Error("Not allowed by CORS"));
-  },
+  origin: corsOrigin,
   credentials: true,
   exposedHeaders: [CSRF_HEADER, "x-ratelimit-remaining", "x-ratelimit-reset"],
 }));

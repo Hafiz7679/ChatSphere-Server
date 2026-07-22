@@ -7,10 +7,13 @@ const csrfProtection = (req, res, next) => {
   if (["GET", "HEAD", "OPTIONS"].includes(req.method)) {
     if (!req.cookies[CSRF_COOKIE]) {
       const token = crypto.randomBytes(32).toString("hex");
+      const isProduction = process.env.NODE_ENV === "production";
+      const origin = req.headers.origin || req.headers.referer || "";
+      const isCrossOrigin = isProduction && origin && !origin.includes(req.hostname);
       res.cookie(CSRF_COOKIE, token, {
         httpOnly: false,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        secure: isProduction,
+        sameSite: isCrossOrigin ? "none" : "lax",
         maxAge: 24 * 60 * 60 * 1000,
       });
     }
@@ -55,10 +58,13 @@ const csrfProtection = (req, res, next) => {
 const csrfTokenEndpoint = (req, res) => {
   const token = req.cookies[CSRF_COOKIE] || crypto.randomBytes(32).toString("hex");
   if (!req.cookies[CSRF_COOKIE]) {
+    const isProduction = process.env.NODE_ENV === "production";
+    const origin = req.headers.origin || req.headers.referer || "";
+    const isCrossOrigin = isProduction && origin && !origin.includes(req.hostname);
     res.cookie(CSRF_COOKIE, token, {
       httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: isProduction,
+      sameSite: isCrossOrigin ? "none" : "lax",
       maxAge: 24 * 60 * 60 * 1000,
     });
   }

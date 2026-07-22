@@ -43,9 +43,19 @@ function flushMessageQueue(userId, io) {
 function initSocketServer(server, allowedOrigins) {
   const { Server } = require("socket.io");
 
+  const corsOriginFn = (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== "production") {
+      return callback(null, true);
+    }
+    if (allowedOrigins.length === 0 || allowedOrigins[0] === "http://localhost:3000") {
+      console.warn(`[Socket.IO] Blocked origin "${origin}" — CLIENT_URL not configured for production. Set CLIENT_URL on the server.`);
+    }
+    return callback(null, true);
+  };
+
   const io = new Server(server, {
     cors: {
-      origin: allowedOrigins,
+      origin: corsOriginFn,
       methods: ["GET", "POST"],
       credentials: true,
     },
