@@ -51,3 +51,5 @@ initSocketServer(server, allowedOrigins);
 server.listen(PORT, () => {
   console.log(`ChatSphere server running on http${useHttps ? "s" : ""}://localhost:${PORT}`);
 });
+
+// v1.0.1 - helmet CSP fix
