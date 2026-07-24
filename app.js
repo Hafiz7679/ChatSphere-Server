@@ -59,7 +59,7 @@ app.use(helmet({
       mediaSrc: ["'self'", "blob:", "https://res.cloudinary.com", "https://*.cloudinary.com"],
       frameSrc: ["'self'"],
       objectSrc: ["'none'"],
-      ...(process.env.NODE_ENV === "production" ? { upgradeInsecureRequests: true } : {}),
+      upgradeInsecureRequests: [],
     },
   },
   crossOriginEmbedderPolicy: false,
