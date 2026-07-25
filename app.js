@@ -37,15 +37,29 @@ if (process.env.NODE_ENV === "production") {
 
 const corsOrigin = (origin, callback) => {
   if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== "production") {
-    return callback(null, true);
+    return callback(null, origin || true);
   }
   if (allowedOrigins.length === 0 || allowedOrigins[0] === "http://localhost:3000") {
-    console.warn(`[CORS] Blocked origin "${origin}" — CLIENT_URL not configured for production. Set CLIENT_URL on the server.`);
+    console.warn(`[CORS] Origin "${origin}" not in allowed list. Set CLIENT_URL on the server to include: ${origin}`);
   }
-  return callback(null, true);
+  return callback(null, origin);
 };
 
-// Security headers
+const corsOptions = {
+  origin: corsOrigin,
+  credentials: true,
+  methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "x-csrf-token", "X-CSRF-Token"],
+  exposedHeaders: [CSRF_HEADER, "x-ratelimit-remaining", "x-ratelimit-reset"],
+};
+
+const corsMiddleware = cors(corsOptions);
+
+// Handle OPTIONS preflight explicitly before everything else
+app.options("*", corsMiddleware);
+
+// Security headers — trust proxy so secure cookies work behind Render's proxy
+app.set("trust proxy", 1);
 app.use(helmet({
   contentSecurityPolicy: {
     useDefaults: false,
@@ -79,11 +93,7 @@ app.use(helmet({
   xPermittedCrossDomainPolicies: { permittedPolicies: "none" },
 }));
 
-app.use(cors({
-  origin: corsOrigin,
-  credentials: true,
-  exposedHeaders: [CSRF_HEADER, "x-ratelimit-remaining", "x-ratelimit-reset"],
-}));
+app.use(corsMiddleware);
 
 app.use(morgan("dev"));
 
