@@ -52,7 +52,7 @@ function validateEnv() {
   check(
     "Cloudinary configured (production)",
     process.env.NODE_ENV !== "production" || !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET),
-    "HIGH",
+    "MEDIUM",
     "Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET for file uploads"
   );
 
