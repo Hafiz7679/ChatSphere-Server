@@ -55,9 +55,6 @@ const corsOptions = {
 
 const corsMiddleware = cors(corsOptions);
 
-// Handle OPTIONS preflight explicitly before everything else
-app.options("*", corsMiddleware);
-
 // Security headers — trust proxy so secure cookies work behind Render's proxy
 app.set("trust proxy", 1);
 app.use(helmet({
