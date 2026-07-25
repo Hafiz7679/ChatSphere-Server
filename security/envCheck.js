@@ -45,7 +45,7 @@ function validateEnv() {
   check(
     "Email provider configured (production)",
     process.env.NODE_ENV !== "production" || !!process.env.RESEND_API_KEY || !!process.env.SENDGRID_API_KEY || !!process.env.SMTP_HOST,
-    "HIGH",
+    "MEDIUM",
     "Configure RESEND_API_KEY, SENDGRID_API_KEY, or SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS for production email"
   );
 
